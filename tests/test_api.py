@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
-
-from app.main import app
+from mlops_pipeline.main import app
 
 
 class FakeClassifier:
