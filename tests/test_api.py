@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from mlops_pipeline.main import app
 
 
-# fake classifier so test are fast
+# Fake classifier so test are fast
 class FakeClassifier:
     def __call__(self, text, **kwargs):
         if "terrible" in text.lower():
