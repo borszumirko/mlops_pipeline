@@ -61,7 +61,6 @@ GitHub Actions CI/CD
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/` | Basic API information |
 | GET | `/health` | Health check |
 | GET | `/ready` | Readiness check |
 | POST | `/predict` | Predict text sentiment |
@@ -81,7 +80,7 @@ curl -X POST "http://localhost:8000/predict" \
 {
   "text": "This project is amazing!",
   "sentiment": "POSITIVE",
-  "score": 0.999
+  "confidence": 0.999
 }
 ```
 
@@ -106,3 +105,24 @@ The workflow publishes image tags such as:
 - `latest` — The latest published image
 - `<commit-sha>` — A version tied to a specific Git commit
 
+
+## Running Tests
+
+Install the locked dependencies and run the API tests:
+
+```bash
+uv sync --locked
+uv run pytest -v
+```
+
+The tests replace the Hugging Face pipeline factory before application startup,
+so they do not download or load model weights. They cover health and readiness,
+positive and negative responses, input validation, unavailable models, and
+inference failures. These tests verify API behavior; real-model quality evaluation
+will be a separate pipeline step.
+
+To explicitly run with Hugging Face offline mode enabled:
+
+```bash
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 uv run pytest -v
+```
