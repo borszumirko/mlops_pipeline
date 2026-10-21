@@ -15,6 +15,10 @@ MODEL_ID = os.getenv(
     "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
 )
 
+MODEL_REVISION = os.getenv(
+    "MODEL_REVISION", "714eb0fa89d2f80546fda750413ed43d93601a13"
+)
+
 MAX_TEXT_LENGTH = 5000
 
 
@@ -25,6 +29,7 @@ async def lifespan(app: FastAPI):
     app.state.classifier = pipeline(
         task="text-classification",
         model=MODEL_ID,
+        revision=MODEL_REVISION,
         device=-1,
     )
 

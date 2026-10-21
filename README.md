@@ -126,3 +126,27 @@ To explicitly run with Hugging Face offline mode enabled:
 ```bash
 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 uv run pytest -v
 ```
+
+## Model Quality Gate
+
+Run real-model evaluation separately from the mocked API tests:
+
+```bash
+uv run python -m mlops_pipeline.evaluate
+```
+
+The first run downloads model weights. Evaluation and serving use the same pinned
+model revision; `MODEL_ID` and `MODEL_REVISION` can override it together.
+The evaluator writes `reports/evaluation.json` with accuracy, macro F1, per-class
+metrics, a confusion matrix, predictions, and model/dataset identifiers.
+It exits with status 1 if accuracy or macro F1 falls below 0.90.
+
+GitHub Actions runs this gate on pull requests and pushes to `main`, uploads the
+report even after a quality failure, and requires both tests and evaluation to
+pass before publishing an image. Model downloads require access to Hugging Face.
+
+The initial model scored 100% accuracy and macro F1 on the 24 curated examples.
+This is a small synthetic regression check, not a real-world benchmark. See
+[evaluation documentation](evaluation/README.md) for provenance, policy rationale,
+and limitations. Automated deployment and comparison against the deployed model
+remain future steps.

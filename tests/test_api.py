@@ -22,7 +22,8 @@ def client(monkeypatch):
     monkeypatch.setattr(api.app.state, "classifier", None, raising=False)
     with TestClient(api.app) as test_client:
         factory.assert_called_once_with(
-            task="text-classification", model=api.MODEL_ID, device=-1
+            task="text-classification", model=api.MODEL_ID,
+            revision=api.MODEL_REVISION, device=-1
         )
         yield test_client
 

@@ -1,0 +1,24 @@
+{"text": "I loved every minute of this movie.", "label": "POSITIVE"}
+{"text": "The service was excellent and the staff were friendly.", "label": "POSITIVE"}
+{"text": "This product works perfectly and is easy to use.", "label": "POSITIVE"}
+{"text": "The food was delicious and beautifully prepared.", "label": "POSITIVE"}
+{"text": "A wonderful experience that I would happily repeat.", "label": "POSITIVE"}
+{"text": "The book was engaging from beginning to end.", "label": "POSITIVE"}
+{"text": "Delivery was quick and everything arrived in perfect condition.", "label": "POSITIVE"}
+{"text": "The performance was outstanding.", "label": "POSITIVE"}
+{"text": "I am delighted with my purchase.", "label": "POSITIVE"}
+{"text": "This is a fantastic place to stay.", "label": "POSITIVE"}
+{"text": "I was not disappointed by this excellent film.", "label": "POSITIVE"}
+{"text": "The repair solved my problem and I am very happy.", "label": "POSITIVE"}
+{"text": "I hated every minute of this movie.", "label": "NEGATIVE"}
+{"text": "The service was awful and the staff were rude.", "label": "NEGATIVE"}
+{"text": "This product broke immediately and is useless.", "label": "NEGATIVE"}
+{"text": "The food was disgusting and badly prepared.", "label": "NEGATIVE"}
+{"text": "A dreadful experience that I never want to repeat.", "label": "NEGATIVE"}
+{"text": "The book was boring from beginning to end.", "label": "NEGATIVE"}
+{"text": "Delivery was late and everything arrived damaged.", "label": "NEGATIVE"}
+{"text": "The performance was terrible.", "label": "NEGATIVE"}
+{"text": "I regret buying this product.", "label": "NEGATIVE"}
+{"text": "This is a horrible place to stay.", "label": "NEGATIVE"}
+{"text": "This film was not good at all.", "label": "NEGATIVE"}
+{"text": "The repair failed and I am very unhappy.", "label": "NEGATIVE"}

@@ -35,9 +35,32 @@ jobs:
       - name: Run tests
         run: uv run pytest -v
 
+  evaluate:
+    name: Evaluate real model quality
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv python install 3.13
+      - run: uv sync --locked
+      - name: Enforce model quality thresholds
+        run: uv run python -m mlops_pipeline.evaluate
+      - name: Save evaluation report even when quality gate fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-evaluation
+          path: reports/evaluation.json
+          if-no-files-found: warn
+
   publish:
     name: Build and publish Docker image
-    needs: test
+    needs: [test, evaluate]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     runs-on: ubuntu-latest
