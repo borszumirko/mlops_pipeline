@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import torch
@@ -23,7 +24,8 @@ MAX_TEXT_LENGTH = 5000
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Load the classifier on startup and log application shutdown."""
     logger.info("Loading sentiment model: %s", MODEL_ID)
 
     app.state.classifier = pipeline(
@@ -63,12 +65,14 @@ class SentimentResponse(BaseModel):
 
 
 @app.get("/health")
-def health_check():
+def health_check() -> dict[str, str]:
+    """Return process health independently of model availability."""
     return {"status": "healthy"}
 
 
 @app.get("/ready")
-def readiness_check():
+def readiness_check() -> dict[str, str]:
+    """Return model readiness, raising HTTP 503 while unavailable."""
     classifier = getattr(app.state, "classifier", None)
 
     if classifier is None:
@@ -87,7 +91,13 @@ def readiness_check():
     "/predict",
     response_model=SentimentResponse,
 )
-def predict(request: SentimentRequest):
+def predict(request: SentimentRequest) -> SentimentResponse:
+    """Classify trimmed text, rejecting blank input or unavailable inference.
+
+    Raises:
+        HTTPException: For blank text (422), an unavailable model (503),
+            or a failed prediction (500).
+    """
     text = request.text.strip()
 
     if not text:

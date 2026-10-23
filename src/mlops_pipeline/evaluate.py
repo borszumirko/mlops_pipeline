@@ -1,13 +1,54 @@
 """Evaluate the real sentiment model and fail closed on quality regressions."""
+from collections.abc import Mapping
+from typing import Literal, TypedDict
+
 import argparse
 import hashlib
 import json
 from pathlib import Path
 
+class DatasetRow(TypedDict):
+    """A labeled sentiment evaluation example."""
+
+    text: str
+    label: str
+
+
+class ClassMetrics(TypedDict):
+    """Precision, recall, F1, and actual sample count for one class."""
+
+    precision: float
+    recall: float
+    f1: float
+    support: int
+
+
+class ConfusionMatrix(TypedDict):
+    """Class order and counts indexed by actual then predicted class."""
+
+    labels: tuple[str, ...]
+    rows_actual_columns_predicted: list[list[int]]
+
+
+class EvaluationMetrics(TypedDict):
+    """Aggregate and per-class evaluation results."""
+
+    accuracy: float
+    macro_f1: float
+    per_class: dict[str, ClassMetrics]
+    confusion_matrix: ConfusionMatrix
+
+
 LABELS = ("NEGATIVE", "POSITIVE")
 
 
-def load_dataset(path):
+def load_dataset(path: str | Path) -> tuple[list[DatasetRow], str]:
+    """Read JSONL examples and return rows plus the raw file SHA-256 digest.
+
+    Raises:
+        ValueError: If texts or labels are invalid, either class is absent,
+            texts are duplicated, or a line contains invalid JSON.
+    """
     raw = Path(path).read_bytes()
     rows = [json.loads(line) for line in raw.decode().splitlines() if line.strip()]
     if not rows or any(
@@ -22,14 +63,19 @@ def load_dataset(path):
     return rows, hashlib.sha256(raw).hexdigest()
 
 
-def metrics(expected, predicted):
+def metrics(expected: list[str], predicted: list[str]) -> EvaluationMetrics:
+    """Compute accuracy, macro F1, per-class scores, and a confusion matrix.
+
+    Raises:
+        ValueError: If labels are unknown or lists are empty or differ in length.
+    """
     if not expected or len(expected) != len(predicted):
         raise ValueError("Predictions must match the nonempty dataset")
     if any(label not in LABELS for label in expected + predicted):
         raise ValueError("Unexpected sentiment label")
     matrix = [[sum(a == x and b == y for a, b in zip(expected, predicted))
                for y in LABELS] for x in LABELS]
-    per_class = {}
+    per_class: dict[str, ClassMetrics] = {}
     for i, label in enumerate(LABELS):
         tp = matrix[i][i]
         support = sum(matrix[i])
@@ -37,7 +83,7 @@ def metrics(expected, predicted):
         precision = tp / total_predicted if total_predicted else 0.0
         recall = tp / support if support else 0.0
         f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
-        per_class[label] = dict(precision=precision, recall=recall, f1=f1, support=support)
+        per_class[label] = ClassMetrics(precision=precision, recall=recall, f1=f1, support=support)
     return {
         "accuracy": sum(a == b for a, b in zip(expected, predicted)) / len(expected),
         "macro_f1": sum(v["f1"] for v in per_class.values()) / len(LABELS),
@@ -46,12 +92,17 @@ def metrics(expected, predicted):
     }
 
 
-def gate(scores, policy):
+def gate(
+    scores: EvaluationMetrics | Mapping[str, float],
+    policy: Mapping[Literal["accuracy", "macro_f1"], float],
+) -> list[str]:
+    """Return failure messages for scores strictly below policy thresholds."""
     return [f"{name} {scores[name]:.4f} below {minimum:.4f}"
             for name, minimum in policy.items() if scores[name] < minimum]
 
 
-def main():
+def main() -> int:
+    """Evaluate the pinned model, write a report, and return 1 on gate failure."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", default="evaluation/sentiment-v1.jsonl")
     parser.add_argument("--policy", default="evaluation/policy.json")

@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+from typing import TypedDict
 from unittest.mock import Mock
 
 import pytest
@@ -6,15 +8,24 @@ from fastapi.testclient import TestClient
 import mlops_pipeline.main as api
 
 
+class Prediction(TypedDict):
+    """A classifier label and confidence returned by the test double."""
+
+    label: str
+    score: float
+
+
 class FakeClassifier:
-    def __call__(self, text, **kwargs):
+    def __call__(self, text: str, **kwargs: object) -> list[Prediction]:
+        """Return a deterministic sentiment prediction without loading a model."""
         if "terrible" in text.lower():
             return [{"label": "NEGATIVE", "score": 0.98}]
         return [{"label": "POSITIVE", "score": 0.97}]
 
 
 @pytest.fixture
-def client(monkeypatch):
+def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    """Yield an API client with a fake classifier and isolated model state."""
     # Replace the factory before startup to prevent model downloads and loading.
     factory = Mock(return_value=FakeClassifier())
     monkeypatch.setattr(api, "pipeline", factory)
@@ -28,13 +39,15 @@ def client(monkeypatch):
         yield test_client
 
 
-def test_health_endpoint(client):
+def test_health_endpoint(client: TestClient) -> None:
+    """Verify that the health endpoint reports a healthy process."""
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
 
 
-def test_ready_endpoint(client):
+def test_ready_endpoint(client: TestClient) -> None:
+    """Verify readiness includes the configured model identifier."""
     response = client.get("/ready")
     assert response.status_code == 200
     assert response.json() == {"status": "ready", "model": api.MODEL_ID}
@@ -47,7 +60,10 @@ def test_ready_endpoint(client):
         ("This was terrible.", "NEGATIVE", 0.98),
     ],
 )
-def test_prediction(client, text, sentiment, confidence):
+def test_prediction(
+    client: TestClient, text: str, sentiment: str, confidence: float,
+) -> None:
+    """Verify sentiment, confidence, and whitespace trimming in predictions."""
     response = client.post("/predict", json={"text": text})
     assert response.status_code == 200
     assert response.json() == {
@@ -69,13 +85,17 @@ def test_prediction(client, text, sentiment, confidence):
         {"text": ["hello"]},
     ],
 )
-def test_invalid_input_is_rejected(client, payload):
+def test_invalid_input_is_rejected(client: TestClient, payload: dict[str, object]) -> None:
+    """Verify invalid prediction payloads receive HTTP 422."""
     response = client.post("/predict", json=payload)
     assert response.status_code == 422
 
 
 @pytest.mark.parametrize("missing_attribute", [False, True])
-def test_model_unavailable(client, monkeypatch, missing_attribute):
+def test_model_unavailable(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, missing_attribute: bool,
+) -> None:
+    """Verify missing models affect readiness and predictions but not health."""
     if missing_attribute:
         monkeypatch.delattr(api.app.state, "classifier")
     else:
@@ -89,7 +109,8 @@ def test_model_unavailable(client, monkeypatch, missing_attribute):
         assert response.json() == {"detail": "Model is not ready"}
 
 
-def test_inference_failure(client, monkeypatch):
+def test_inference_failure(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify inference errors return a generic HTTP 500 response."""
     classifier = Mock(side_effect=RuntimeError("internal model failure"))
     monkeypatch.setattr(api.app.state, "classifier", classifier)
     response = client.post("/predict", json={"text": "hello"})
