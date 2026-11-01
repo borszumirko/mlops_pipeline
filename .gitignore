@@ -11,3 +11,12 @@ wheels/
 
 
 reports/
+
+# Local Terraform state, downloaded providers, and saved plans
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+crash.log

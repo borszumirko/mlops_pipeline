@@ -1,7 +1,7 @@
 [project]
 name = "mlops-pipeline"
 version = "0.1.0"
-description = "Add your description here"
+description = "Mlops Pipeline with CI/CD and AWS deployment"
 readme = "README.md"
 authors = [
     { name = "borszumirko", email = "borszumirko@gmail.com" }

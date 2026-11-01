@@ -1,6 +1,6 @@
 import logging
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import torch
@@ -16,15 +16,13 @@ MODEL_ID = os.getenv(
     "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
 )
 
-MODEL_REVISION = os.getenv(
-    "MODEL_REVISION", "714eb0fa89d2f80546fda750413ed43d93601a13"
-)
+MODEL_REVISION = os.getenv("MODEL_REVISION", "714eb0fa89d2f80546fda750413ed43d93601a13")
 
 MAX_TEXT_LENGTH = 5000
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Load the classifier on startup and log application shutdown."""
     logger.info("Loading sentiment model: %s", MODEL_ID)
 
